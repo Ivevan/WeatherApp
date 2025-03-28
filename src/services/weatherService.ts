@@ -12,6 +12,12 @@ export interface WeatherData {
   city: string;
 }
 
+export interface CitySuggestion {
+  name: string;
+  country: string;
+  state?: string;
+}
+
 export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
   try {
     const response = await axios.get(`${BASE_URL}/weather`, {
@@ -33,5 +39,28 @@ export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
     };
   } catch (error) {
     throw new Error('Failed to fetch weather data');
+  }
+};
+
+export const getCitySuggestions = async (query: string): Promise<CitySuggestion[]> => {
+  if (!query.trim()) return [];
+  
+  try {
+    const response = await axios.get('https://api.openweathermap.org/geo/1.0/direct', {
+      params: {
+        q: query,
+        limit: 5,
+        appid: API_KEY,
+      },
+    });
+
+    return response.data.map((city: any) => ({
+      name: city.name,
+      country: city.country,
+      state: city.state,
+    }));
+  } catch (error) {
+    console.error('Error fetching city suggestions:', error);
+    return [];
   }
 }; 
