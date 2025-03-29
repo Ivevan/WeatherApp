@@ -5,7 +5,7 @@
  * @format
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -14,17 +14,35 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import WeatherCard from './src/components/WeatherCard';
 import SearchBar from './src/components/SearchBar';
-import { getWeatherByCity, WeatherData } from './src/services/weatherService';
+import { getWeatherByCity, WeatherData, testBackendConnection } from './src/services/weatherService';
 
 function App(): React.JSX.Element {
   const [city, setCity] = useState('');
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+
+  // Test backend connection when app starts
+  useEffect(() => {
+    const checkBackendConnection = async () => {
+      const isConnected = await testBackendConnection();
+      setBackendConnected(isConnected);
+      if (!isConnected) {
+        Alert.alert(
+          'Connection Error',
+          'Cannot connect to the backend server. Please ensure the server is running.'
+        );
+      }
+    };
+    
+    checkBackendConnection();
+  }, []);
 
   const handleSearch = async () => {
     if (!city.trim()) return;
@@ -33,10 +51,20 @@ function App(): React.JSX.Element {
     setError(null);
 
     try {
+      // First check backend connection
+      if (!backendConnected) {
+        const isConnected = await testBackendConnection();
+        setBackendConnected(isConnected);
+        if (!isConnected) {
+          throw new Error('Backend server is not reachable. Please ensure it is running.');
+        }
+      }
+      
       const data = await getWeatherByCity(city);
       setWeatherData(data);
     } catch (err) {
-      setError('Failed to fetch weather data. Please try again.');
+      console.error('Search error:', err);
+      setError(`Error: ${err instanceof Error ? err.message : 'Failed to fetch weather data. Please try again.'}`);
     } finally {
       setLoading(false);
     }
@@ -74,6 +102,13 @@ function App(): React.JSX.Element {
               onSubmit={handleSearch}
               onSelectCity={handleCitySelect}
             />
+            {backendConnected === false && (
+              <View style={styles.connectionError}>
+                <Text style={styles.connectionErrorText}>
+                  ⚠️ Cannot connect to backend server
+                </Text>
+              </View>
+            )}
           </View>
           
           <View style={styles.weatherContainer}>
@@ -174,6 +209,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  connectionError: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#ff3b30',
+    padding: 10,
+    zIndex: 1001,
+  },
+  connectionErrorText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
