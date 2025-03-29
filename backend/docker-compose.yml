@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  weather-backend:
+    build: .
+    image: weather-app-backend
+    container_name: weather-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - WEATHER_BASE_URL=${WEATHER_BASE_URL}
+    volumes:
+      - ./:/app
+      - /app/node_modules 
