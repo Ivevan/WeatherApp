@@ -10,6 +10,7 @@ export interface WeatherData {
   windSpeed: number;
   icon: string;
   city: string;
+  country: string;
 }
 
 export interface CitySuggestion {
@@ -36,6 +37,7 @@ export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
       windSpeed: data.wind.speed,
       icon: data.weather[0].icon,
       city: data.name,
+      country: data.sys.country,
     };
   } catch (error) {
     throw new Error('Failed to fetch weather data');

@@ -15,6 +15,8 @@ interface WeatherCardProps {
   humidity: number;
   windSpeed: number;
   icon: string;
+  city: string;
+  country: string;
   onPress?: () => void;
 }
 
@@ -24,6 +26,8 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
   humidity,
   windSpeed,
   icon,
+  city,
+  country,
   onPress,
 }) => {
   return (
@@ -33,6 +37,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
         style={styles.card}
       >
         <View style={styles.content}>
+          <Text style={styles.cityName}>{city}, {country}</Text>
           <View style={styles.mainInfo}>
             <Text style={styles.temperature}>{Math.round(temperature)}°C</Text>
             <Text style={styles.description}>{description}</Text>
@@ -81,6 +86,15 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
+  },
+  cityName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   mainInfo: {
     alignItems: 'center',

@@ -92,6 +92,8 @@ function App(): React.JSX.Element {
                 humidity={weatherData.humidity}
                 windSpeed={weatherData.windSpeed}
                 icon={weatherData.icon}
+                city={weatherData.city}
+                country={weatherData.country}
               />
             ) : null}
           </View>
