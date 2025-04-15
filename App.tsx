@@ -19,6 +19,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import WeatherCard from './src/components/WeatherCard';
 import SearchBar from './src/components/SearchBar';
+import DetailedWeatherScreen from './src/screens/DetailedWeatherScreen';
 import { getWeatherByCity, WeatherData, testBackendConnection } from './src/services/weatherService';
 
 function App(): React.JSX.Element {
@@ -27,6 +28,7 @@ function App(): React.JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  const [showDetailedView, setShowDetailedView] = useState(false);
 
   // Test backend connection when app starts
   useEffect(() => {
@@ -74,6 +76,20 @@ function App(): React.JSX.Element {
     setCity(selectedCity);
     handleSearch();
   };
+
+  const handleViewToggle = () => {
+    setShowDetailedView(!showDetailedView);
+  };
+
+  // If detailed view is active and we have weather data
+  if (showDetailedView && weatherData) {
+    return (
+      <DetailedWeatherScreen 
+        weatherData={weatherData}
+        onBack={handleViewToggle}
+      />
+    );
+  }
 
   return (
     <LinearGradient
@@ -129,6 +145,7 @@ function App(): React.JSX.Element {
                 icon={weatherData.icon}
                 city={weatherData.city}
                 country={weatherData.country}
+                onPress={handleViewToggle}
               />
             ) : null}
           </View>

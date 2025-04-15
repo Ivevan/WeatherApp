@@ -4,23 +4,28 @@ import { Platform } from 'react-native';
 // Backend API URL configuration
 // For development computer IP - use your computer's IP address on your network
 // Physical devices need to connect to your computer's actual IP address
-const DEVELOPMENT_MACHINE_IP = '192.168.21.46'; // Your computer's IP address
+const DEVELOPMENT_MACHINE_IP = '192.168.253.46'; // Updated to current IP address
 
 // API URL selection logic
 let API_URL: string;
 
+// Try multiple possible endpoints for maximum compatibility
+const possibleEndpoints = [
+  `http://${DEVELOPMENT_MACHINE_IP}:3000/api`,
+  `http://localhost:3000/api`,
+  `http://10.0.2.2:3000/api`,  // Special Android emulator hostname
+];
+
 if (Platform.OS === 'android') {
-  // For Android devices: use development machine IP for physical devices
   API_URL = `http://${DEVELOPMENT_MACHINE_IP}:3000/api`;
 } else if (Platform.OS === 'ios') {
-  // For iOS devices (simulator uses localhost, physical uses IP)
   API_URL = `http://${DEVELOPMENT_MACHINE_IP}:3000/api`;
 } else {
-  // Default for web
   API_URL = 'http://localhost:3000/api';
 }
 
 console.log('Using API URL:', API_URL);
+console.log('Will try these fallback URLs if needed:', possibleEndpoints);
 
 export interface WeatherData {
   temperature: number;
@@ -89,19 +94,24 @@ export const getCitySuggestions = async (query: string): Promise<CitySuggestion[
 };
 
 export const testBackendConnection = async (): Promise<boolean> => {
-  try {
-    console.log('Testing backend connection...');
-    console.log(`API URL: ${API_URL}/test`);
-    
-    const response = await axios.get(`${API_URL}/test`);
-    console.log('Backend connection successful:', response.data);
-    return true;
-  } catch (error) {
-    console.error('Backend connection failed:', error);
-    if (axios.isAxiosError(error)) {
-      console.error('Network Error Details:', error.message);
-      console.error('Is Network Error:', error.isAxiosError);
+  // Try each endpoint until one works
+  for (const endpoint of possibleEndpoints) {
+    try {
+      console.log(`Testing backend connection to ${endpoint}/test...`);
+      const response = await axios.get(`${endpoint}/test`);
+      console.log('Backend connection successful:', response.data);
+      
+      // If successful, update the main API_URL
+      API_URL = endpoint;
+      console.log('Updated primary API_URL to:', API_URL);
+      
+      return true;
+    } catch (error: any) {
+      console.error(`Backend connection to ${endpoint} failed:`, error.message);
+      // Continue to the next endpoint
     }
-    return false;
   }
+  
+  console.error('All backend connection attempts failed');
+  return false;
 }; 

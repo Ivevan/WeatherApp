@@ -30,10 +30,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionsActive, setSuggestionsActive] = useState(true);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (value.trim().length >= 2) {
+      if (value.trim().length >= 2 && suggestionsActive) {
         const citySuggestions = await getCitySuggestions(value);
         setSuggestions(citySuggestions);
         setShowSuggestions(true);
@@ -45,7 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
     const timeoutId = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(timeoutId);
-  }, [value]);
+  }, [value, suggestionsActive]);
 
   const handleSelectCity = (city: CitySuggestion) => {
     const fullCityName = city.state 
@@ -54,8 +55,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
     
     onChangeText(fullCityName);
     setShowSuggestions(false);
+    setSuggestionsActive(false);
+    
     if (onSelectCity) {
       onSelectCity(fullCityName);
+    }
+  };
+
+  const handleTextChange = (text: string) => {
+    onChangeText(text);
+    if (!suggestionsActive) {
+      setSuggestionsActive(true);
     }
   };
 
@@ -89,15 +99,30 @@ const SearchBar: React.FC<SearchBarProps> = ({
           <TextInput
             style={styles.input}
             value={value}
-            onChangeText={onChangeText}
+            onChangeText={handleTextChange}
             placeholder={placeholder}
             placeholderTextColor="#666"
             returnKeyType="search"
-            onSubmitEditing={onSubmit}
-            onFocus={() => setShowSuggestions(true)}
+            onSubmitEditing={() => {
+              setShowSuggestions(false);
+              setSuggestionsActive(false);
+              onSubmit();
+            }}
+            onFocus={() => {
+              if (suggestionsActive && value.trim().length >= 2) {
+                setShowSuggestions(true);
+              }
+            }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           />
-          <TouchableOpacity style={styles.buttonContainer} onPress={onSubmit}>
+          <TouchableOpacity 
+            style={styles.buttonContainer} 
+            onPress={() => {
+              setShowSuggestions(false);
+              setSuggestionsActive(false);
+              onSubmit();
+            }}
+          >
             <LinearGradient
               colors={['#4c669f', '#3b5998']}
               style={styles.button}
@@ -107,7 +132,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           </TouchableOpacity>
         </LinearGradient>
       </View>
-      {showSuggestions && suggestions.length > 0 && (
+      {showSuggestions && suggestionsActive && suggestions.length > 0 && (
         <View style={styles.suggestionsContainer}>
           <FlatList
             data={suggestions}
