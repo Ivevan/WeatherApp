@@ -52,6 +52,11 @@ function App(): React.JSX.Element {
     setLoading(true);
     setError(null);
 
+    // Add timeout to prevent UI from being stuck in loading state
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out. Please check your connection and try again.')), 15000)
+    );
+
     try {
       // First check backend connection
       if (!backendConnected) {
@@ -62,11 +67,25 @@ function App(): React.JSX.Element {
         }
       }
       
-      const data = await getWeatherByCity(city);
+      // Race between the actual request and timeout
+      const data = await Promise.race([
+        getWeatherByCity(city),
+        timeoutPromise
+      ]) as WeatherData;
+      
       setWeatherData(data);
     } catch (err) {
       console.error('Search error:', err);
-      setError(`Error: ${err instanceof Error ? err.message : 'Failed to fetch weather data. Please try again.'}`);
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : 'Failed to fetch weather data. Please try again.';
+      
+      setError(`Error: ${errorMessage}`);
+      
+      // Reset backend connection status to trigger a re-check on next attempt
+      if (errorMessage.includes('timed out') || errorMessage.includes('not reachable')) {
+        setBackendConnected(false);
+      }
     } finally {
       setLoading(false);
     }

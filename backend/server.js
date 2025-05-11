@@ -6,6 +6,19 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Verify API key exists
+if (!process.env.WEATHER_API_KEY) {
+  console.error('ERROR: Missing WEATHER_API_KEY in .env file!');
+  console.error('Please create a .env file with the following content:');
+  console.error(`
+PORT=3000
+WEATHER_BASE_URL=https://api.openweathermap.org/data/2.5
+WEATHER_API_KEY=YOUR_OPENWEATHERMAP_API_KEY
+  `);
+  console.error('Get your API key from: https://openweathermap.org/api');
+  process.exit(1);
+}
+
 // Middleware
 // Configure CORS to allow requests from any origin
 app.use(cors({

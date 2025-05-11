@@ -2,30 +2,20 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 
 // Backend API URL configuration
-// For development computer IP - use your computer's IP address on your network
-// Physical devices need to connect to your computer's actual IP address
-const DEVELOPMENT_MACHINE_IP = '192.168.253.46'; // Updated to current IP address
-
-// API URL selection logic
-let API_URL: string;
-
 // Try multiple possible endpoints for maximum compatibility
 const possibleEndpoints = [
-  `http://${DEVELOPMENT_MACHINE_IP}:3000/api`,
-  `http://localhost:3000/api`,
-  `http://10.0.2.2:3000/api`,  // Special Android emulator hostname
+  // Your actual network IP addresses
+  'http://192.168.209.46:3000/api',
+  // Android emulator specific address
+  'http://10.0.2.2:3000/api',
+  // Localhost for development
+  'http://localhost:3000/api'
 ];
 
-if (Platform.OS === 'android') {
-  API_URL = `http://${DEVELOPMENT_MACHINE_IP}:3000/api`;
-} else if (Platform.OS === 'ios') {
-  API_URL = `http://${DEVELOPMENT_MACHINE_IP}:3000/api`;
-} else {
-  API_URL = 'http://localhost:3000/api';
-}
+// Default API URL to be updated after successful connection
+let API_URL = possibleEndpoints[0];
 
-console.log('Using API URL:', API_URL);
-console.log('Will try these fallback URLs if needed:', possibleEndpoints);
+console.log('Will try these URLs:', possibleEndpoints);
 
 export interface WeatherData {
   temperature: number;
@@ -52,6 +42,7 @@ export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
       params: {
         city: city,
       },
+      timeout: 10000, // Add timeout to prevent hanging requests
     });
 
     console.log('Weather data fetched successfully');
@@ -63,7 +54,7 @@ export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
       console.error('Status:', error.response?.status);
       console.error('Headers:', error.response?.headers);
     }
-    throw new Error('Failed to fetch weather data');
+    throw new Error('Failed to fetch weather data. Please check your connection and try again.');
   }
 };
 
@@ -78,6 +69,7 @@ export const getCitySuggestions = async (query: string): Promise<CitySuggestion[
       params: {
         query: query,
       },
+      timeout: 5000, // Add timeout to prevent hanging requests
     });
 
     console.log('City suggestions fetched successfully');
@@ -98,7 +90,7 @@ export const testBackendConnection = async (): Promise<boolean> => {
   for (const endpoint of possibleEndpoints) {
     try {
       console.log(`Testing backend connection to ${endpoint}/test...`);
-      const response = await axios.get(`${endpoint}/test`);
+      const response = await axios.get(`${endpoint}/test`, { timeout: 3000 });
       console.log('Backend connection successful:', response.data);
       
       // If successful, update the main API_URL
