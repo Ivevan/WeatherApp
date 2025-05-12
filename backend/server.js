@@ -8,37 +8,37 @@ const PORT = process.env.PORT || 3000;
 
 // Verify API key exists
 if (!process.env.WEATHER_API_KEY) {
-  console.error('ERROR: Missing WEATHER_API_KEY in .env file!');
-  console.error('Please create a .env file with the following content:');
-  console.error(`
-PORT=3000
-WEATHER_BASE_URL=https://api.openweathermap.org/data/2.5
-WEATHER_API_KEY=YOUR_OPENWEATHERMAP_API_KEY
-  `);
-  console.error('Get your API key from: https://openweathermap.org/api');
+  console.error('ERROR: Missing WEATHER_API_KEY in environment variables!');
+  console.error('Please set WEATHER_API_KEY in your environment or .env file');
   process.exit(1);
 }
 
 // Middleware
-// Configure CORS to allow requests from any origin
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 app.use(express.json());
 
-// Routes
-app.get('/api/test', (req, res) => {
+// Root endpoint for health checks
+app.get('/', (req, res) => {
+  res.json({ status: 'OK', message: 'Weather API is running' });
+});
+
+// API Routes
+const apiRouter = express.Router();
+
+// Test endpoint
+apiRouter.get('/test', (req, res) => {
   console.log('Test endpoint hit');
   res.json({ status: 'OK', message: 'Backend is reachable' });
 });
 
-app.get('/api/weather', async (req, res) => {
+// Weather endpoint
+apiRouter.get('/weather', async (req, res) => {
   try {
     const { city } = req.query;
+    console.log(`Fetching weather data for city: ${city}`);
     
     if (!city) {
+      console.log('No city provided in request');
       return res.status(400).json({ error: 'City parameter is required' });
     }
 
@@ -61,14 +61,20 @@ app.get('/api/weather', async (req, res) => {
       country: data.sys.country,
     };
 
+    console.log(`Successfully fetched weather data for ${city}`);
     res.json(weatherData);
   } catch (error) {
     console.error('Error fetching weather data:', error.message);
+    if (error.response) {
+      console.error('OpenWeatherMap API response:', error.response.data);
+      console.error('Status code:', error.response.status);
+    }
     res.status(500).json({ error: 'Failed to fetch weather data' });
   }
 });
 
-app.get('/api/cities', async (req, res) => {
+// Cities endpoint
+apiRouter.get('/cities', async (req, res) => {
   try {
     const { query } = req.query;
     console.log(`Received request for cities with query: ${query}`);
@@ -99,20 +105,21 @@ app.get('/api/cities', async (req, res) => {
     console.error('Error fetching city suggestions:', error.message);
     if (error.response) {
       console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
+      console.error('Status code:', error.response.status);
     }
     res.status(500).json({ error: 'Failed to fetch city suggestions' });
   }
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'UP' });
-});
+// Mount the API router
+app.use('/api', apiRouter);
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
   console.log(`Server running on port ${PORT}`);
-  console.log(`API available at http://localhost:${PORT}`);
-  console.log(`For external devices, use: http://<your-computer-ip>:${PORT}`);
+  console.log('Available endpoints:');
+  console.log('- GET /api/test');
+  console.log('- GET /api/weather?city=<cityname>');
+  console.log('- GET /api/cities?query=<searchterm>');
 }); 
