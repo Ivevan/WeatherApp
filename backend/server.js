@@ -58,9 +58,22 @@ const validateQuery = (req, res, next) => {
   next();
 };
 
-// Health check endpoint
+// Root endpoint for health checks
 app.get('/', (req, res) => {
-  res.json({ status: 'OK', message: 'Weather API is running' });
+  try {
+    res.json({ 
+      status: 'OK', 
+      message: 'Weather API is running',
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({ 
+      status: 'ERROR',
+      message: 'Health check failed'
+    });
+  }
 });
 
 // Test endpoint
