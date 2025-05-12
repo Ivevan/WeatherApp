@@ -20,9 +20,7 @@ app.use(limiter);
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://your-frontend-domain.com'] // Replace with your actual frontend domain
-    : '*',
+  origin: '*', // Allow all origins in development and production for mobile app
   methods: ['GET'],
   allowedHeaders: ['Content-Type'],
   maxAge: 86400 // 24 hours
