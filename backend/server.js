@@ -20,14 +20,16 @@ app.use(limiter);
 
 // CORS configuration
 const corsOptions = {
-  origin: '*', // Allow all origins in development and production for mobile app
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://your-frontend-domain.com'] // Replace with your actual frontend domain
+    : '*',
   methods: ['GET'],
   allowedHeaders: ['Content-Type'],
   maxAge: 86400 // 24 hours
 };
 app.use(cors(corsOptions));
 
-app.use(express.json({ limit: '10kb' })); // Limit payload size
+app.use(express.json());
 
 // Verify API key exists
 if (!process.env.WEATHER_API_KEY) {
@@ -41,22 +43,18 @@ const apiRouter = express.Router();
 
 // Input validation middleware
 const validateCity = (req, res, next) => {
-  const city = req.query.city;
+  const { city } = req.query;
   if (!city || typeof city !== 'string' || city.length > 100) {
     return res.status(400).json({ error: 'Invalid city parameter' });
   }
-  // Sanitize input - remove any characters that aren't letters, spaces, or commas
-  req.query.city = city.replace(/[^a-zA-Z\s,]/g, '');
   next();
 };
 
 const validateQuery = (req, res, next) => {
-  const query = req.query.query;
+  const { query } = req.query;
   if (!query || typeof query !== 'string' || query.length > 100) {
     return res.status(400).json({ error: 'Invalid query parameter' });
   }
-  // Sanitize input
-  req.query.query = query.replace(/[^a-zA-Z\s,]/g, '');
   next();
 };
 
@@ -136,7 +134,8 @@ apiRouter.get('/cities', validateQuery, async (req, res) => {
   } catch (error) {
     console.error('Error fetching city suggestions:', error.message);
     if (error.response) {
-      console.error('Response:', error.response.data);
+      console.error('Response data:', error.response.data);
+      console.error('Status code:', error.response.status);
     }
     res.status(500).json({ error: 'Failed to fetch city suggestions' });
   }
@@ -148,7 +147,7 @@ app.use('/api', apiRouter);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.status(500).json({ error: 'Something broke!' });
 });
 
 // Start server
