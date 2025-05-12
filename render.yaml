@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: weather-app-backend
+    env: docker
+    region: singapore # Choose the region closest to your users
+    plan: free # or choose a paid plan if needed
+    healthCheckPath: /
+    buildCommand: docker build -t weather-app-backend .
+    startCommand: docker run -p 3000:3000 weather-app-backend
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: WEATHER_API_KEY
+        sync: false # This will be set manually in Render dashboard
+      - key: WEATHER_BASE_URL
+        value: https://api.openweathermap.org/data/2.5 
