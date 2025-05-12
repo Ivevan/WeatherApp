@@ -1,10 +1,35 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Security middleware
+app.use(helmet()); // Adds various HTTP headers for security
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+// CORS configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://your-frontend-domain.com'] // Replace with your actual frontend domain
+    : '*',
+  methods: ['GET'],
+  allowedHeaders: ['Content-Type'],
+  maxAge: 86400 // 24 hours
+};
+app.use(cors(corsOptions));
+
+app.use(express.json({ limit: '10kb' })); // Limit payload size
 
 // Verify API key exists
 if (!process.env.WEATHER_API_KEY) {
@@ -13,34 +38,45 @@ if (!process.env.WEATHER_API_KEY) {
   process.exit(1);
 }
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// API Routes
+const apiRouter = express.Router();
 
-// Root endpoint for health checks
+// Input validation middleware
+const validateCity = (req, res, next) => {
+  const city = req.query.city;
+  if (!city || typeof city !== 'string' || city.length > 100) {
+    return res.status(400).json({ error: 'Invalid city parameter' });
+  }
+  // Sanitize input - remove any characters that aren't letters, spaces, or commas
+  req.query.city = city.replace(/[^a-zA-Z\s,]/g, '');
+  next();
+};
+
+const validateQuery = (req, res, next) => {
+  const query = req.query.query;
+  if (!query || typeof query !== 'string' || query.length > 100) {
+    return res.status(400).json({ error: 'Invalid query parameter' });
+  }
+  // Sanitize input
+  req.query.query = query.replace(/[^a-zA-Z\s,]/g, '');
+  next();
+};
+
+// Health check endpoint
 app.get('/', (req, res) => {
   res.json({ status: 'OK', message: 'Weather API is running' });
 });
 
-// API Routes
-const apiRouter = express.Router();
-
 // Test endpoint
 apiRouter.get('/test', (req, res) => {
-  console.log('Test endpoint hit');
   res.json({ status: 'OK', message: 'Backend is reachable' });
 });
 
-// Weather endpoint
-apiRouter.get('/weather', async (req, res) => {
+// Weather endpoint with validation
+apiRouter.get('/weather', validateCity, async (req, res) => {
   try {
     const { city } = req.query;
     console.log(`Fetching weather data for city: ${city}`);
-    
-    if (!city) {
-      console.log('No city provided in request');
-      return res.status(400).json({ error: 'City parameter is required' });
-    }
 
     const response = await axios.get(`${process.env.WEATHER_BASE_URL}/weather`, {
       params: {
@@ -48,6 +84,7 @@ apiRouter.get('/weather', async (req, res) => {
         appid: process.env.WEATHER_API_KEY,
         units: 'metric',
       },
+      timeout: 5000 // 5 second timeout
     });
 
     const data = response.data;
@@ -61,7 +98,8 @@ apiRouter.get('/weather', async (req, res) => {
       country: data.sys.country,
     };
 
-    console.log(`Successfully fetched weather data for ${city}`);
+    // Cache headers
+    res.set('Cache-Control', 'public, max-age=300'); // Cache for 5 minutes
     res.json(weatherData);
   } catch (error) {
     console.error('Error fetching weather data:', error.message);
@@ -73,24 +111,19 @@ apiRouter.get('/weather', async (req, res) => {
   }
 });
 
-// Cities endpoint
-apiRouter.get('/cities', async (req, res) => {
+// Cities endpoint with validation
+apiRouter.get('/cities', validateQuery, async (req, res) => {
   try {
     const { query } = req.query;
-    console.log(`Received request for cities with query: ${query}`);
-    
-    if (!query || !query.trim()) {
-      console.log('Empty query, returning empty array');
-      return res.json([]);
-    }
+    console.log(`Searching cities with query: ${query}`);
 
-    console.log(`Making request to OpenWeatherMap API with query: ${query}`);
     const response = await axios.get('https://api.openweathermap.org/geo/1.0/direct', {
       params: {
         q: query,
         limit: 5,
         appid: process.env.WEATHER_API_KEY,
       },
+      timeout: 5000 // 5 second timeout
     });
 
     const citySuggestions = response.data.map(city => ({
@@ -99,13 +132,13 @@ apiRouter.get('/cities', async (req, res) => {
       state: city.state,
     }));
 
-    console.log(`Found ${citySuggestions.length} suggestions`);
+    // Cache headers
+    res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
     res.json(citySuggestions);
   } catch (error) {
     console.error('Error fetching city suggestions:', error.message);
     if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Status code:', error.response.status);
+      console.error('Response:', error.response.data);
     }
     res.status(500).json({ error: 'Failed to fetch city suggestions' });
   }
@@ -114,12 +147,14 @@ apiRouter.get('/cities', async (req, res) => {
 // Mount the API router
 app.use('/api', apiRouter);
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
   console.log(`Server running on port ${PORT}`);
-  console.log('Available endpoints:');
-  console.log('- GET /api/test');
-  console.log('- GET /api/weather?city=<cityname>');
-  console.log('- GET /api/cities?query=<searchterm>');
 }); 
