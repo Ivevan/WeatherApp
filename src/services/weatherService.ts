@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 
 // Backend API URL configuration
-const RENDER_URL = 'https://weather-app-backend.onrender.com/api'; // Update this with your actual Render URL
+const RENDER_URL = 'https://weatherapp-5qa7.onrender.com/api'; // Production URL on Render
 const LOCAL_IP = 'http://192.168.209.46:3000/api';
 
 // Try multiple possible endpoints for maximum compatibility
