@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 
 // Backend API URL configuration
-const RENDER_URL = 'https://weatherapp-5qa7.onrender.com/api'; // Production URL on Render
+const RENDER_URL = 'https://weatherapp-5qa7.onrender.com/api'; // Production backend on Render
 const LOCAL_IP = 'http://192.168.209.46:3000/api';
 
 // Try multiple possible endpoints for maximum compatibility
@@ -17,11 +17,11 @@ const possibleEndpoints = [
   'http://localhost:3000/api'
 ];
 
-// Default API URL to be updated after successful connection
+// Default API URL - use Render URL in production, local in development
 let API_URL = __DEV__ ? LOCAL_IP : RENDER_URL;
 
 console.log('Environment:', __DEV__ ? 'Development' : 'Production');
-console.log('Initial API URL:', API_URL);
+console.log('Using API URL:', API_URL);
 
 export interface WeatherData {
   temperature: number;
@@ -42,13 +42,13 @@ export interface CitySuggestion {
 export const getWeatherByCity = async (city: string): Promise<WeatherData> => {
   try {
     console.log(`Fetching weather data for city: ${city}`);
-    console.log(`API URL: ${API_URL}/weather`);
+    console.log(`Using API URL: ${API_URL}/weather`);
     
     const response = await axios.get(`${API_URL}/weather`, {
       params: {
         city: city,
       },
-      timeout: 10000, // Add timeout to prevent hanging requests
+      timeout: 10000, // 10 second timeout
     });
 
     console.log('Weather data fetched successfully');
@@ -69,13 +69,13 @@ export const getCitySuggestions = async (query: string): Promise<CitySuggestion[
   
   try {
     console.log(`Fetching city suggestions for query: ${query}`);
-    console.log(`API URL: ${API_URL}/cities`);
+    console.log(`Using API URL: ${API_URL}/cities`);
     
     const response = await axios.get(`${API_URL}/cities`, {
       params: {
         query: query,
       },
-      timeout: 5000, // Add timeout to prevent hanging requests
+      timeout: 5000, // 5 second timeout
     });
 
     console.log('City suggestions fetched successfully');
