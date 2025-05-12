@@ -2,12 +2,12 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 
 // Backend API URL configuration
-const RENDER_URL = 'https://your-service-name.onrender.com/api'; // Replace with your actual Render URL
+const RENDER_URL = 'https://weather-app-backend.onrender.com/api'; // Your Render service URL
 const LOCAL_IP = 'http://192.168.209.46:3000/api';
 
 // Try multiple possible endpoints for maximum compatibility
 const possibleEndpoints = [
-  // Production URL
+  // Production URL (Render)
   RENDER_URL,
   // Local development URLs
   LOCAL_IP,
@@ -18,9 +18,9 @@ const possibleEndpoints = [
 ];
 
 // Default API URL to be updated after successful connection
-let API_URL = __DEV__ ? possibleEndpoints[1] : possibleEndpoints[0];
+let API_URL = __DEV__ ? LOCAL_IP : RENDER_URL;
 
-console.log('Will try these URLs:', possibleEndpoints);
+console.log('Environment:', __DEV__ ? 'Development' : 'Production');
 console.log('Initial API URL:', API_URL);
 
 export interface WeatherData {
