@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 
 // Backend API URL configuration
-const RENDER_URL = 'https://weather-app-backend.onrender.com/api'; // Your Render service URL
+const RENDER_URL = 'https://weather-app-backend.onrender.com/api'; // Update this with your actual Render URL
 const LOCAL_IP = 'http://192.168.209.46:3000/api';
 
 // Try multiple possible endpoints for maximum compatibility
@@ -18,9 +18,10 @@ const possibleEndpoints = [
 ];
 
 // Default API URL to be updated after successful connection
-let API_URL = RENDER_URL; // Force using Render URL for testing
+let API_URL = __DEV__ ? LOCAL_IP : RENDER_URL;
 
-console.log('Trying to connect to:', API_URL);
+console.log('Environment:', __DEV__ ? 'Development' : 'Production');
+console.log('Initial API URL:', API_URL);
 
 export interface WeatherData {
   temperature: number;
@@ -91,34 +92,24 @@ export const getCitySuggestions = async (query: string): Promise<CitySuggestion[
 };
 
 export const testBackendConnection = async (): Promise<boolean> => {
-  try {
-    console.log('Testing connection to:', API_URL);
-    const response = await axios.get(`${API_URL}/test`, { 
-      timeout: 10000,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      }
-    });
-    console.log('Backend response:', response.data);
-    return true;
-  } catch (error: any) {
-    console.error('Connection test failed:', error.message);
-    if (axios.isAxiosError(error)) {
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Error response:', error.response.data);
-        console.error('Error status:', error.response.status);
-        console.error('Error headers:', error.response.headers);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received:', error.request);
-      } else {
-        // Something happened in setting up the request
-        console.error('Error setting up request:', error.message);
-      }
+  // Try each endpoint until one works
+  for (const endpoint of possibleEndpoints) {
+    try {
+      console.log(`Testing backend connection to ${endpoint}/test...`);
+      const response = await axios.get(`${endpoint}/test`, { timeout: 3000 });
+      console.log('Backend connection successful:', response.data);
+      
+      // If successful, update the main API_URL
+      API_URL = endpoint;
+      console.log('Updated primary API_URL to:', API_URL);
+      
+      return true;
+    } catch (error: any) {
+      console.error(`Backend connection to ${endpoint} failed:`, error.message);
+      // Continue to the next endpoint
     }
-    return false;
   }
+  
+  console.error('All backend connection attempts failed');
+  return false;
 }; 

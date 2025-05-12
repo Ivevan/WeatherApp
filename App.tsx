@@ -15,7 +15,6 @@ import {
   Image,
   Dimensions,
   Alert,
-  TouchableOpacity,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import WeatherCard from './src/components/WeatherCard';
@@ -34,23 +33,12 @@ function App(): React.JSX.Element {
   // Test backend connection when app starts
   useEffect(() => {
     const checkBackendConnection = async () => {
-      console.log('Checking backend connection...');
       const isConnected = await testBackendConnection();
       setBackendConnected(isConnected);
       if (!isConnected) {
         Alert.alert(
           'Connection Error',
-          'Cannot connect to the backend server. The server might be starting up or there might be connection issues. Please wait a moment and try again.',
-          [
-            {
-              text: 'Retry',
-              onPress: checkBackendConnection
-            },
-            {
-              text: 'OK',
-              style: 'cancel'
-            }
-          ]
+          'Cannot connect to the backend server. Please ensure the server is running.'
         );
       }
     };
@@ -152,14 +140,8 @@ function App(): React.JSX.Element {
             {backendConnected === false && (
               <View style={styles.connectionError}>
                 <Text style={styles.connectionErrorText}>
-                  ⚠️ Cannot connect to server. Tap to retry.
+                  ⚠️ Cannot connect to backend server
                 </Text>
-                <TouchableOpacity 
-                  style={styles.retryButton}
-                  onPress={() => testBackendConnection().then(setBackendConnected)}
-                >
-                  <Text style={styles.retryButtonText}>Retry Connection</Text>
-                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -277,17 +259,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  retryButton: {
-    backgroundColor: '#ffffff33',
-    padding: 8,
-    borderRadius: 5,
-    marginTop: 5,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
   },
 });
 
